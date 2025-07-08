@@ -191,24 +191,54 @@ El nodo se ejecuta de manera continua hasta que se interrumpe manualmente (`Ctrl
 
 ### 🧩 Fragmento clave del código (`odom_callback`)
 
+Este método es el corazón del nodo `lap_timer_node.py`. Se ejecuta automáticamente cada vez que se recibe un nuevo mensaje de odometría del vehículo (a través del tópico `/ego_racecar/odom`). A continuación, se detalla cada parte del código:
+
 ```python
 def odom_callback(self, msg):
     x = msg.pose.pose.position.x
     y = msg.pose.pose.position.y
     current_time = time()
+```
 
+- Se extraen las coordenadas actuales del vehículo (`x` e `y`) desde el mensaje de odometría.
+- Se captura el tiempo actual del sistema para calcular duraciones.
+
+```python
     if abs(x - self.finish_line_x) < self.line_tolerance and abs(y - self.finish_line_y) < self.line_tolerance:
+```
+
+- Se verifica si el vehículo está dentro de una zona definida alrededor de la línea de meta virtual.
+- Esta comparación se hace considerando una tolerancia en ambas coordenadas, para no depender de una posición exacta.
+
+```python
         if current_time - self.last_crossing_time > self.cooldown_time:
+```
+
+- Se comprueba que haya pasado un tiempo suficiente desde el último cruce (en segundos), para evitar registrar múltiples vueltas por pequeñas oscilaciones de posición.
+
+```python
             lap_time = current_time - self.lap_start_time
             self.lap_start_time = current_time
             self.last_crossing_time = current_time
             self.lap_count += 1
             self.lap_times.append(lap_time)
+```
 
+- Si se cumple la condición de cruce y tiempo, se considera una vuelta completa.
+- Se calcula el tiempo transcurrido desde el último cruce (`lap_time`).
+- Se actualizan los registros internos:
+  - `lap_start_time` para la próxima vuelta.
+  - `last_crossing_time` para reiniciar el cooldown.
+  - Se incrementa el contador de vueltas (`lap_count`).
+  - Se almacena el tiempo de la vuelta en la lista `lap_times`.
+
+```python
             self.get_logger().info(f'🏁 Vuelta {self.lap_count} completada en {lap_time:.2f} segundos')
 ```
----
 
+- Finalmente, se imprime un mensaje en consola con el número de vuelta y el tiempo registrado.
+
+---
 # 📂 Resumen de Nodos del Proyecto
 
 Este repositorio incluye dos nodos fundamentales para la navegación y evaluación del rendimiento de un vehículo autónomo. Ambos se encuentran en la carpeta `nodes/` del repositorio.
